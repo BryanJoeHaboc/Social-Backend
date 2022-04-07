@@ -1,5 +1,5 @@
 const express = require("express");
-
+const { postCreatePost } = require("../middlewares/validators/feed.validator");
 const { getPosts, createPost } = require("../controllers/feed.controller");
 
 const router = express.Router();
@@ -12,6 +12,6 @@ router.get("/", (req, res, next) => {
 router.get("/posts", getPosts);
 
 // POST /feed/post
-router.post("/post", createPost);
+router.post("/post", postCreatePost, createPost);
 
 module.exports = router;
