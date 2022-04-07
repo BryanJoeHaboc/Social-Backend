@@ -1,34 +1,38 @@
 const { validationResult } = require("express-validator");
 const Post = require("../models/post.model");
 
+const passToErrorMiddleware = (err, next) => {
+  if (!err.statusCode) {
+    err.statusCode = 500;
+  }
+  next(err);
+};
+
 const getPosts = (req, res, next) => {
-  res.status(200).json({
-    posts: [
-      {
-        _id: "1",
-        title: "First Post",
-        content: "This is the first post!",
-        imageUrl: "images/duck.jpg",
-        creator: {
-          name: "Maximilian",
-        },
-        createdAt: new Date(),
-      },
-    ],
+  Post.find().then((posts) => {
+    if (!posts) {
+      const error = new Error("Could not find any post");
+      error.statusCode = 404;
+      throw error;
+    }
+    res.status(200).send({ message: "fetched all post successfully", posts });
   });
 };
+
 const createPost = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(422).json({
-      message: "Validation failed, entered data is incorrect. Please try again",
-      errors: errors.array(),
-    });
+    const error = new Error(
+      "Validation failed, entered data is incorrect. Please try again"
+    );
+    error.statusCode = 422;
+
+    throw error;
   }
 
   const title = req.body.title;
   const content = req.body.content;
-  const imageUrl = "images/duck.jpg";
+  const imageUrl = "public/images/duck.jpg";
 
   // Create post in db
   const post = new Post({
@@ -47,10 +51,31 @@ const createPost = (req, res, next) => {
         post: result,
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      passToErrorMiddleware(err, next);
+    });
+};
+
+const getPost = (req, res, next) => {
+  const postId = req.params.postId;
+
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("Could not find post");
+        error.statusCode = 404;
+        throw error;
+      }
+
+      res.status(200).json({ message: "fetched post", post });
+    })
+    .catch((err) => {
+      passToErrorMiddleware(err, next);
+    });
 };
 
 module.exports = {
   createPost,
   getPosts,
+  getPost,
 };
