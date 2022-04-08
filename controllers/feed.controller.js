@@ -11,18 +11,7 @@ const passToErrorMiddleware = (err, next) => {
   next(err);
 };
 
-const getPosts = (req, res, next) => {
-  Post.find().then((posts) => {
-    if (!posts) {
-      const error = new Error("Could not find any post");
-      error.statusCode = 404;
-      throw error;
-    }
-    res.status(200).send({ message: "fetched all post successfully", posts });
-  });
-};
-
-const createPost = (req, res, next) => {
+const validateError = (req) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const error = new Error(
@@ -32,6 +21,35 @@ const createPost = (req, res, next) => {
 
     throw error;
   }
+};
+
+const getPosts = (req, res, next) => {
+  const page = req.query.page || 1;
+
+  const perPage = 2;
+  const offset = perPage * (page - 1);
+  let totalItems = 0;
+
+  Post.count()
+    .then((countOfAllItems) => {
+      totalItems = countOfAllItems;
+      return Post.find().skip(offset).limit(perPage);
+    })
+    .then((posts) => {
+      if (!posts) {
+        const error = new Error("Could not find any post");
+        error.statusCode = 404;
+        throw error;
+      }
+      res
+        .status(200)
+        .json({ message: "fetched post successfully", posts, totalItems });
+    });
+};
+
+const createPost = (req, res, next) => {
+  validateError(req);
+
   if (!req.file) {
     const error = new Error("No image provided");
     error.statusCode = 422;
@@ -40,8 +58,6 @@ const createPost = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = req.file.path.replace("\\", "/");
-
-  console.log(imageUrl);
 
   // Create post in db
   const post = new Post({
@@ -83,14 +99,7 @@ const getPost = (req, res, next) => {
 };
 
 const editPost = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    const error = new Error(
-      "Validation failed, entered data is incorrect. Please try again"
-    );
-    error.statusCode = 422;
-    throw error;
-  }
+  validateError(req);
 
   const postId = req.params.postId;
   const { title, content } = req.body;
