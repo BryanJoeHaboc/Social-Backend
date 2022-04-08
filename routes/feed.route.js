@@ -1,4 +1,6 @@
 const express = require("express");
+
+const isAuth = require("../middlewares/authentication/is-auth");
 const { postCreatePost } = require("../middlewares/validators/feed.validator");
 const {
   getPosts,
@@ -15,17 +17,17 @@ router.get("/", (req, res, next) => {
 });
 
 // GET /feed/posts
-router.get("/posts", getPosts);
+router.get("/posts", isAuth, getPosts);
 
 // GET single post
-router.get("/post/:postId", getPost);
+router.get("/post/:postId", isAuth, getPost);
 
 // POST /feed/post
-router.post("/post/", postCreatePost, createPost);
+router.post("/post/", isAuth, postCreatePost, createPost);
 
 // PUT /feed/post
-router.put("/post/:postId", postCreatePost, editPost);
+router.put("/post/:postId", isAuth, postCreatePost, editPost);
 
-router.delete("/post/:postId", deletePost);
+router.delete("/post/:postId", isAuth, deletePost);
 
 module.exports = router;
