@@ -1,7 +1,9 @@
 const { validationResult } = require("express-validator");
-const Post = require("../models/post.model");
 const path = require("path");
 const fs = require("fs");
+
+const User = require("../models/user.model");
+const Post = require("../models/post.model");
 
 const passToErrorMiddleware = (err, next) => {
   console.log("err", err);
@@ -63,16 +65,27 @@ const createPost = (req, res, next) => {
   const post = new Post({
     title,
     content,
-    creator: { name: "BryanJoe" },
+    creator: req.userId,
     imageUrl,
   });
+
+  let creator = {};
 
   post
     .save()
     .then((result) => {
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      creator = user;
+      user.posts.push(post);
+      return user.save();
+    })
+    .then((result) => {
       res.status(201).json({
         message: "Post created successfully!",
-        post: result,
+        post,
+        creator: { _id: creator._id, name: creator.name },
       });
     })
     .catch((err) => {
@@ -123,6 +136,12 @@ const editPost = (req, res, next) => {
         throw error;
       }
 
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("Could not find post.");
+        error.statusCode = 400;
+        throw error;
+      }
+
       if (imageUrl !== post.imageUrl) clearImage(post.imageUrl);
 
       post.title = title;
@@ -152,8 +171,21 @@ const deletePost = (req, res, next) => {
         throw error;
       }
 
+      if (post.creator.toString() !== req.userId) {
+        const error = new Error("Could not find post.");
+        error.statusCode = 400;
+        throw error;
+      }
+
       clearImage(post.imageUrl);
       return Post.findByIdAndRemove(postId);
+    })
+    .then((result) => {
+      return User.findById(req.userId);
+    })
+    .then((user) => {
+      user.posts.pull(postId);
+      return user.save();
     })
     .then((result) => {
       res.status(200).json({ message: "Post deleted" });

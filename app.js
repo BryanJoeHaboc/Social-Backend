@@ -68,9 +68,9 @@ app.use("/auth", authRoutes);
 
 app.use((error, req, res, next) => {
   console.log(error);
-  const { data, message, statusCode = 500 } = error;
+  const { data, message, statusCode } = error;
 
-  res.status(statusCode).json(message, data);
+  res.status(statusCode).json({ message, data });
 });
 
 db.then(() => {

@@ -28,7 +28,6 @@ const validateError = (req) => {
 };
 
 const signup = (req, res, next) => {
-  console.log(req.body);
   validateError(req);
 
   const { email, password, name } = req.body;
@@ -40,7 +39,6 @@ const signup = (req, res, next) => {
         email,
         name,
         password: hashedPassword,
-        status: "I am new",
       });
       return user.save();
     })
