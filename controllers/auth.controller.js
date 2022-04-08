@@ -27,6 +27,14 @@ const validateError = (req) => {
   }
 };
 
+const throwErrorIfUserDNE = () => {
+  const error = new Error("User does not exists.");
+  error.statusCode = 401;
+  throw error;
+};
+
+// ---------------------------------------------- CONTROLLERS -------------------------------------------
+
 const signup = (req, res, next) => {
   validateError(req);
 
@@ -49,12 +57,6 @@ const signup = (req, res, next) => {
 };
 
 const login = (req, res, next) => {
-  const throwErrorIfUserDNE = () => {
-    const error = new Error("User does not exists.");
-    error.statusCode = 401;
-    throw error;
-  };
-
   const { email, password } = req.body;
 
   let currentUser = {};
@@ -87,7 +89,47 @@ const login = (req, res, next) => {
     .catch((err) => passToErrorMiddleware(err));
 };
 
+const getStatus = (req, res, next) => {
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        throwErrorIfUserDNE();
+      }
+
+      res.status(200).json({ message: "User found", status: user.status });
+    })
+    .catch((err) => passToErrorMiddleware(err));
+};
+
+const updateUserStatus = (req, res, next) => {
+  const { status } = req.body;
+  console.log(status);
+
+  if (!status) {
+    const error = new Error("Invalid User status");
+    error.status = 422;
+    throw error;
+  }
+
+  User.findById(req.userId)
+    .then((user) => {
+      if (!user) {
+        throwErrorIfUserDNE();
+      }
+
+      user.status = status;
+      console.log(user);
+      return user.save();
+    })
+    .then((result) => {
+      res.status(200).json({ message: "Updated user status", status });
+    })
+    .catch((err) => passToErrorMiddleware(err));
+};
+
 module.exports = {
   signup,
   login,
+  getStatus,
+  updateUserStatus,
 };

@@ -17,6 +17,9 @@ const validateUserInput = [
   body("password").trim().isLength({ min: 6 }),
 ];
 
+const validateStatus = [body("status").not().isEmpty()];
+
 module.exports = {
   validateUserInput,
+  validateStatus,
 };
