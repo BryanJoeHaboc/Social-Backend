@@ -4,6 +4,7 @@ const fs = require("fs");
 
 const User = require("../models/user.model");
 const Post = require("../models/post.model");
+const io = require("../socket");
 
 const passToErrorMiddleware = (err, next) => {
   console.log("err", err);
@@ -36,6 +37,7 @@ const getPosts = async (req, res, next) => {
     let totalItems = await Post.count();
     const posts = await Post.find()
       .populate("creator")
+      .sort({ createdAt: -1 })
       .skip(offset)
       .limit(perPage);
 
@@ -74,16 +76,16 @@ const createPost = async (req, res, next) => {
       imageUrl,
     });
     await post.save();
+
     const user = await User.findById(req.userId);
     user.posts.push(post);
-    const savedUser = await user.save();
-    if (savedUser) {
-      res.status(201).json({
-        message: "Post created successfully!",
-        post,
-        creator: { _id: user._id, name: user.name },
-      });
-    }
+    await user.save();
+    io.getIO().emit("posts", { action: "create", post });
+    res.status(201).json({
+      message: "Post created successfully!",
+      post,
+      creator: { _id: user._id, name: user.name },
+    });
   } catch (err) {
     passToErrorMiddleware(err, next);
   }
@@ -124,7 +126,7 @@ const editPost = async (req, res, next) => {
       throw error;
     }
 
-    const post = await Post.findById(postId);
+    const post = await Post.findById(postId).populate("creator");
 
     if (!post) {
       const error = new Error("Could not find post");
@@ -132,7 +134,7 @@ const editPost = async (req, res, next) => {
       throw error;
     }
 
-    if (post.creator.toString() !== req.userId) {
+    if (post.creator._id.toString() !== req.userId) {
       const error = new Error("Could not find post.");
       error.statusCode = 400;
       throw error;
@@ -144,7 +146,10 @@ const editPost = async (req, res, next) => {
     post.content = content;
     post.imageUrl = imageUrl;
 
-    await post.save();
+    const result = await post.save();
+
+    io.getIO().emit("posts", { action: "updated", post: result });
+
     res.status(200).send({ message: "Post successfully updated", post: post });
   } catch (err) {
     passToErrorMiddleware(err, next);
@@ -163,7 +168,7 @@ const deletePost = async (req, res, next) => {
       throw error;
     }
 
-    if (post.creator.toString() !== req.userId) {
+    if (post.creator._id.toString() !== req.userId) {
       const error = new Error("Could not find post.");
       error.statusCode = 400;
       throw error;
@@ -181,6 +186,7 @@ const deletePost = async (req, res, next) => {
       }
       currentUser.posts.pull(postId);
       await currentUser.save();
+      io.getIO().emit("posts", { action: "delete", post: postId });
       res.status(200).json({ message: "Post deleted" });
     } else {
       const error = new Error("Post not found");

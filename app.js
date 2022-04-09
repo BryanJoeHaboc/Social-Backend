@@ -73,7 +73,12 @@ app.use((error, req, res, next) => {
 });
 
 db.then(() => {
-  app.listen(port, () => {
+  const server = app.listen(port, () => {
     console.log("Listening to port:", port);
+  });
+
+  const io = require("./socket").init(server);
+  io.on("connection", (socket) => {
+    console.log("Client connnected");
   });
 }).catch((err) => console.log(err));

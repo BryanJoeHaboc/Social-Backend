@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/user.model");
 const Post = require("../models/post.model");
+const { getIO } = require("../socket");
 
 const passToErrorMiddleware = (err, next) => {
   if (!err.statusCode) {
@@ -36,7 +37,7 @@ const throwErrorIfUserDNE = () => {
 
 const signup = async (req, res, next) => {
   const { email, password, name } = req.body;
-
+  console.log(email, password, name);
   try {
     validateError(req);
     const hashedPassword = await bcrypt.hash(password, 12);
