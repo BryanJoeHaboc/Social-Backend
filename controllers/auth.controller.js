@@ -41,12 +41,8 @@ const signup = async (req, res, next) => {
     validateError(req);
     const hashedPassword = await bcrypt.hash(password, 12);
     const user = new User({ email, name, password: hashedPassword });
-    const result = await user.save();
-    if (result) {
-      res.status(201).json({ message: "User created!", userId: result._id });
-    } else {
-      throw new Error("Server error. Please try again");
-    }
+    await user.save();
+    res.status(201).json({ message: "User created!", userId: result._id });
   } catch (err) {
     passToErrorMiddleware(err, next);
   }
@@ -106,10 +102,7 @@ const updateUserStatus = async (req, res, next) => {
       throwErrorIfUserDNE();
     }
     currentUser.status = status;
-    const result = await currentUser.save();
-    if (!result) {
-      throw new Error("Server error. Please try again");
-    }
+    await currentUser.save();
 
     res.status(201).json({
       message: "User status updated successfully",

@@ -70,22 +70,16 @@ const createPost = async (req, res, next) => {
       creator: req.userId,
       imageUrl,
     });
-
-    const savedPost = await post.save();
-
-    if (savedPost) {
-      const user = await User.findById(req.userId);
-      user.posts.push(post);
-      const savedUser = await user.save();
-      if (savedUser) {
-        res.status(201).json({
-          message: "Post created successfully!",
-          post,
-          creator: { _id: user._id, name: user.name },
-        });
-      }
-    } else {
-      throw new Error("Server error. Please try again");
+    await post.save();
+    const user = await User.findById(req.userId);
+    user.posts.push(post);
+    const savedUser = await user.save();
+    if (savedUser) {
+      res.status(201).json({
+        message: "Post created successfully!",
+        post,
+        creator: { _id: user._id, name: user.name },
+      });
     }
   } catch (err) {
     passToErrorMiddleware(err, next);
@@ -147,12 +141,7 @@ const editPost = async (req, res, next) => {
     post.content = content;
     post.imageUrl = imageUrl;
 
-    const result = await post.save();
-
-    if (!result) {
-      throw new Error("Server error. Please try again");
-    }
-
+    await post.save();
     res
       .status(200)
       .send({ message: "Post successfully updated", post: result });
