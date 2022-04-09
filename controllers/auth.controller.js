@@ -7,7 +7,6 @@ const User = require("../models/user.model");
 const Post = require("../models/post.model");
 
 const passToErrorMiddleware = (err, next) => {
-  console.log("err", err);
   if (!err.statusCode) {
     err.statusCode = 500;
   }
@@ -35,96 +34,90 @@ const throwErrorIfUserDNE = () => {
 
 // ---------------------------------------------- CONTROLLERS -------------------------------------------
 
-const signup = (req, res, next) => {
-  validateError(req);
-
+const signup = async (req, res, next) => {
   const { email, password, name } = req.body;
 
-  bcrypt
-    .hash(password, 12)
-    .then((hashedPassword) => {
-      const user = new User({
-        email,
-        name,
-        password: hashedPassword,
-      });
-      return user.save();
-    })
-    .then((result) => {
+  try {
+    validateError(req);
+    const hashedPassword = await bcrypt.hash(password, 12);
+    const user = new User({ email, name, password: hashedPassword });
+    const result = await user.save();
+    if (result) {
       res.status(201).json({ message: "User created!", userId: result._id });
-    })
-    .catch((err) => passToErrorMiddleware(err));
-};
-
-const login = (req, res, next) => {
-  const { email, password } = req.body;
-
-  let currentUser = {};
-
-  User.findOne({ email })
-    .then((user) => {
-      if (!user) {
-        throwErrorIfUserDNE();
-      }
-
-      currentUser = user;
-
-      return bcrypt.compare(password, user.password);
-    })
-    .then((isEqual) => {
-      if (!isEqual) {
-        throwErrorIfUserDNE();
-      }
-      const token = jwt.sign(
-        {
-          email: currentUser.email,
-          userId: currentUser._id,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
-      );
-
-      res.status(200).json({ token, userId: currentUser._id.toString() });
-    })
-    .catch((err) => passToErrorMiddleware(err));
-};
-
-const getStatus = (req, res, next) => {
-  User.findById(req.userId)
-    .then((user) => {
-      if (!user) {
-        throwErrorIfUserDNE();
-      }
-
-      res.status(200).json({ message: "User found", status: user.status });
-    })
-    .catch((err) => passToErrorMiddleware(err));
-};
-
-const updateUserStatus = (req, res, next) => {
-  const { status } = req.body;
-  console.log(status);
-
-  if (!status) {
-    const error = new Error("Invalid User status");
-    error.status = 422;
-    throw error;
+    } else {
+      throw new Error("Server error. Please try again");
+    }
+  } catch (err) {
+    passToErrorMiddleware(err, next);
   }
+};
 
-  User.findById(req.userId)
-    .then((user) => {
-      if (!user) {
-        throwErrorIfUserDNE();
-      }
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    const currentUser = await User.findOne({ email });
+    if (!currentUser) {
+      throwErrorIfUserDNE();
+    }
+    const isPasswordCorrect = bcrypt.compare(password, currentUser.password);
+    if (!isPasswordCorrect) {
+      throwErrorIfUserDNE();
+    }
+    const token = jwt.sign(
+      {
+        email: currentUser.email,
+        userId: currentUser._id,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      userId: currentUser._id.toString(),
+    });
+  } catch (err) {
+    passToErrorMiddleware(err, next);
+  }
+};
 
-      user.status = status;
-      console.log(user);
-      return user.save();
-    })
-    .then((result) => {
-      res.status(200).json({ message: "Updated user status", status });
-    })
-    .catch((err) => passToErrorMiddleware(err));
+const getStatus = async (req, res, next) => {
+  try {
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      throwErrorIfUserDNE();
+    }
+    res.status(200).json({ message: "User found", status: currentUser.status });
+  } catch (err) {
+    passToErrorMiddleware(err, next);
+  }
+};
+
+const updateUserStatus = async (req, res, next) => {
+  const { status } = req.body;
+  try {
+    if (!status) {
+      const error = new Error("Invalid User status");
+      error.status = 422;
+      throw error;
+    }
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      throwErrorIfUserDNE();
+    }
+    currentUser.status = status;
+    const result = await currentUser.save();
+    if (!result) {
+      throw new Error("Server error. Please try again");
+    }
+
+    res.status(201).json({
+      message: "User status updated successfully",
+      status: result.status,
+    });
+  } catch (err) {
+    passToErrorMiddleware(err, next);
+  }
 };
 
 module.exports = {

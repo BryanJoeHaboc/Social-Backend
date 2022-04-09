@@ -67,9 +67,8 @@ app.use("/feed", feedRoutes);
 app.use("/auth", authRoutes);
 
 app.use((error, req, res, next) => {
-  console.log(error);
   const { data, message, statusCode } = error;
-
+  console.log("data", data, "message", message, "statusCode", statusCode);
   res.status(statusCode).json({ message, data });
 });
 
