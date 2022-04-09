@@ -142,9 +142,7 @@ const editPost = async (req, res, next) => {
     post.imageUrl = imageUrl;
 
     await post.save();
-    res
-      .status(200)
-      .send({ message: "Post successfully updated", post: result });
+    res.status(200).send({ message: "Post successfully updated", post: post });
   } catch (err) {
     passToErrorMiddleware(err, next);
   }
