@@ -34,7 +34,10 @@ const getPosts = async (req, res, next) => {
 
   try {
     let totalItems = await Post.count();
-    const posts = await Post.find().skip(offset).limit(perPage);
+    const posts = await Post.find()
+      .populate("creator")
+      .skip(offset)
+      .limit(perPage);
 
     if (!posts) {
       const error = new Error("Could not find any post");
