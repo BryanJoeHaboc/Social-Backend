@@ -4,7 +4,6 @@ const fs = require("fs");
 
 const User = require("../models/user.model");
 const Post = require("../models/post.model");
-const io = require("../socket");
 
 const passToErrorMiddleware = (err, next) => {
   console.log("err", err);
@@ -80,7 +79,7 @@ const createPost = async (req, res, next) => {
     const user = await User.findById(req.userId);
     user.posts.push(post);
     await user.save();
-    io.getIO().emit("posts", { action: "create", post });
+
     res.status(201).json({
       message: "Post created successfully!",
       post,
@@ -148,8 +147,6 @@ const editPost = async (req, res, next) => {
 
     const result = await post.save();
 
-    io.getIO().emit("posts", { action: "updated", post: result });
-
     res.status(200).send({ message: "Post successfully updated", post: post });
   } catch (err) {
     passToErrorMiddleware(err, next);
@@ -186,7 +183,7 @@ const deletePost = async (req, res, next) => {
       }
       currentUser.posts.pull(postId);
       await currentUser.save();
-      io.getIO().emit("posts", { action: "delete", post: postId });
+
       res.status(200).json({ message: "Post deleted" });
     } else {
       const error = new Error("Post not found");

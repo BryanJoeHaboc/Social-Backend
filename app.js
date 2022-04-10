@@ -3,10 +3,11 @@ const path = require("path");
 const bodyParser = require("body-parser");
 const multer = require("multer");
 const { v4: uuidv4 } = require("uuid");
+const { graphqlHTTP } = require("express-graphql");
 
+const graphqlSchema = require("./graphql/schema");
+const graphqlResolver = require("./graphql/resolvers");
 const db = require("./database/db");
-const feedRoutes = require("./routes/feed.route");
-const authRoutes = require("./routes/auth.route");
 
 const app = express();
 
@@ -63,8 +64,14 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/feed", feedRoutes);
-app.use("/auth", authRoutes);
+app.use(
+  "/graphql",
+  graphqlHTTP({
+    schema: graphqlSchema,
+    rootValue: graphqlResolver,
+    graphiql: true,
+  })
+);
 
 app.use((error, req, res, next) => {
   const { data, message, statusCode } = error;
@@ -73,12 +80,7 @@ app.use((error, req, res, next) => {
 });
 
 db.then(() => {
-  const server = app.listen(port, () => {
+  app.listen(port, () => {
     console.log("Listening to port:", port);
-  });
-
-  const io = require("./socket").init(server);
-  io.on("connection", (socket) => {
-    console.log("Client connnected");
   });
 }).catch((err) => console.log(err));
