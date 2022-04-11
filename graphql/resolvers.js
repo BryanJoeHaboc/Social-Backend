@@ -27,7 +27,7 @@ const validateCreatePost = (errors, { title, content, imageUrl }) => {
     errors.push({ message: "Content must not be empty " });
   }
 
-  if (validator.isURL(imageUrl)) {
+  if (!validator.isURL(imageUrl)) {
     errors.push({ message: "Image Url must be a valid url" });
   }
 };
@@ -97,6 +97,17 @@ module.exports = {
   },
   createPost: async function ({ userInput }, req) {
     const errors = [];
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+
+    //dummy url
+    if (!userInput.imageUrl)
+      userInput.imageUrl =
+        "https://images.pexels.com/photos/3358707/pexels-photo-3358707.png?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2";
+
     validateCreatePost(errors, userInput);
 
     if (errors.length > 0) {
@@ -106,25 +117,41 @@ module.exports = {
       throw error;
     }
 
+    const { title, content, imageUrl } = userInput;
+    const user = await User.findById(req.userId);
+
+    if (!user) {
+      const error = new Error("Invalid user");
+      error.data = errors;
+      error.code = 401;
+      throw error;
+    }
+
     const post = new Post({
       title,
       content,
-      creator: req.userId,
+      creator: user,
       imageUrl,
     });
 
-    await post.save();
+    const createdPost = await post.save();
 
-    const user = await User.findById(req.userId);
-    user.posts.push(post);
+    user.posts.push(createdPost);
     await user.save();
 
     return {
-      post,
-      creator: user,
+      ...createdPost._doc,
+      _id: createdPost._id.toString(),
+      createdAt: createdPost.createdAt.toISOString(),
+      updatedAt: createdPost.updatedAt.toISOString(),
     };
   },
   getPosts: async function ({ userInput }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
     const page = req.query.page || 1;
     const perPage = 2;
     const offset = perPage * (page - 1);
@@ -142,6 +169,16 @@ module.exports = {
       throw error;
     }
 
-    return { posts, totalItems };
+    return {
+      posts: posts.map((p) => {
+        return {
+          ...p._doc,
+          _id: p._id.toString(),
+          createdAt: p.createdAt.toISOString(),
+          updatedAt: p.updatedAt.toISOString(),
+        };
+      }),
+      totalItems,
+    };
   },
 };
