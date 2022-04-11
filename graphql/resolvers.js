@@ -146,13 +146,14 @@ module.exports = {
       updatedAt: createdPost.updatedAt.toISOString(),
     };
   },
-  getPosts: async function ({ userInput }, req) {
+  getPosts: async function ({ page }, req) {
     if (!req.isAuth) {
       const error = new Error("Not authenticated");
       error.code = 401;
       throw error;
     }
-    const page = req.query.page || 1;
+    if (!page) page = 1;
+
     const perPage = 2;
     const offset = perPage * (page - 1);
 
