@@ -119,7 +119,7 @@ module.exports = {
 
     const { title, content, imageUrl } = userInput;
     const user = await User.findById(req.userId);
-    console.log(title, content, imageUrl);
+
     if (!user) {
       const error = new Error("Invalid user");
       error.data = errors;
@@ -190,7 +190,7 @@ module.exports = {
     }
 
     const post = await Post.findById(postId).populate("creator");
-    console.log(postId);
+
     if (!post) {
       const error = new Error("Could not find post");
       error.statusCode = 404;
@@ -205,7 +205,14 @@ module.exports = {
     };
   },
   getStatus: async function ({ userId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+
     const errors = [];
+
     if (!req.isAuth) {
       const error = new Error("Not authenticated");
       error.code = 401;
@@ -220,6 +227,49 @@ module.exports = {
     }
     return {
       status: currentUser.status,
+    };
+  },
+  editPost: async function ({ userInput, postId }, req) {
+    const errors = [];
+
+    validateCreatePost(errors, userInput);
+
+    if (errors.length > 0) {
+      const error = new Error("Invalid input");
+      error.data = errors;
+      error.code = 422;
+      throw error;
+    }
+
+    const post = await Post.findById(postId).populate("creator");
+
+    if (!post) {
+      const error = new Error("Could not find post");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Could not find post.");
+      error.statusCode = 400;
+      throw error;
+    }
+    const { title, content } = userInput;
+    let imageUrl = userInput.imageUrl;
+
+    post.title = title;
+    post.content = content;
+    if (imageUrl !== "undefined") {
+      post.imageUrl = imageUrl;
+    }
+
+    const updatedPost = await post.save();
+
+    return {
+      ...updatedPost._doc,
+      _id: updatedPost._id.toString(),
+      createdAt: updatedPost.createdAt.toISOString(),
+      updatedAt: updatedPost.updatedAt.toISOString(),
     };
   },
 };

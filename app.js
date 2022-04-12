@@ -67,10 +67,8 @@ app.use((req, res, next) => {
 });
 
 app.use(auth);
-console.log("dumaan ng cors");
-app.put("/post-image", (req, res, next) => {
-  console.log("hello");
 
+app.put("/post-image", (req, res, next) => {
   if (!req.isAuth) {
     const error = new Error("Not authenticated");
     error.code = 401;
