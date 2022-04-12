@@ -27,9 +27,9 @@ const validateCreatePost = (errors, { title, content, imageUrl }) => {
     errors.push({ message: "Content must not be empty " });
   }
 
-  if (!validator.isURL(imageUrl)) {
-    errors.push({ message: "Image Url must be a valid url" });
-  }
+  // if (!validator.isURL(imageUrl)) {
+  //   errors.push({ message: "Image Url must be a valid url" });
+  // }
 };
 
 module.exports = {
@@ -104,9 +104,9 @@ module.exports = {
     }
 
     //dummy url
-    if (!userInput.imageUrl)
-      userInput.imageUrl =
-        "https://images.pexels.com/photos/3358707/pexels-photo-3358707.png?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2";
+    // if (!userInput.imageUrl)
+    //   userInput.imageUrl =
+    //     "https://images.pexels.com/photos/3358707/pexels-photo-3358707.png?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2";
 
     validateCreatePost(errors, userInput);
 
@@ -119,7 +119,7 @@ module.exports = {
 
     const { title, content, imageUrl } = userInput;
     const user = await User.findById(req.userId);
-
+    console.log(title, content, imageUrl);
     if (!user) {
       const error = new Error("Invalid user");
       error.data = errors;

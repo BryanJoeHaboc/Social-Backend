@@ -1,4 +1,12 @@
 require("dotenv").config();
 const mongoose = require("mongoose");
 
-module.exports = mongoose.connect(process.env.MONGODB_CONNECT_LINK);
+const env = process.env.NODE_ENV || "development";
+
+let url = process.env.LOCAL_MONGODB;
+
+if (env !== "development") {
+  url = process.env.MONGODB_CONNECT_LINK;
+}
+
+module.exports = mongoose.connect(url);
