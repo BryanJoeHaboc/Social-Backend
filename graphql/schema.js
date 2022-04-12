@@ -31,6 +31,11 @@ module.exports = buildSchema(`
         totalItems: Int!
     }
 
+    type UserStatus {
+        status: String!
+    }
+    
+
     input UserInputData {
         email: String!
         password: String!
@@ -57,6 +62,7 @@ module.exports = buildSchema(`
         login(userInput: UserInputDataLogin): Auth!
         getPosts(page: Int ): Posts!
         getSinglePost(postId : String!) : Post! 
+        getStatus : UserStatus!
     }
 
     schema {

@@ -204,4 +204,22 @@ module.exports = {
       updatedAt: post.updatedAt.toISOString(),
     };
   },
+  getStatus: async function ({ userId }, req) {
+    const errors = [];
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      const error = new Error("Invalid user");
+      error.data = errors;
+      error.code = 401;
+      throw error;
+    }
+    return {
+      status: currentUser.status,
+    };
+  },
 };
