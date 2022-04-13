@@ -1,5 +1,7 @@
 const bcrypt = require("bcrypt");
 const validator = require("validator");
+const fs = require("fs");
+const path = require("path");
 
 const User = require("../models/user.model");
 const Post = require("../models/post.model");
@@ -291,7 +293,7 @@ module.exports = {
       error.statusCode = 400;
       throw error;
     }
-
+    clearImage(post.imageUrl);
     const isPostDeleted = await Post.findByIdAndRemove(postId);
 
     if (isPostDeleted) {
@@ -314,4 +316,10 @@ module.exports = {
       throw error;
     }
   },
+};
+
+const clearImage = (filePath) => {
+  filePath = path.join(__dirname, "..", filePath);
+  console.log(filePath);
+  fs.unlink(filePath, (err) => console.log(err));
 };
