@@ -205,12 +205,6 @@ module.exports = {
     };
   },
   getStatus: async function ({ userId }, req) {
-    if (!req.isAuth) {
-      const error = new Error("Not authenticated");
-      error.code = 401;
-      throw error;
-    }
-
     const errors = [];
 
     if (!req.isAuth) {
@@ -231,6 +225,12 @@ module.exports = {
   },
   editPost: async function ({ userInput, postId }, req) {
     const errors = [];
+
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
 
     validateCreatePost(errors, userInput);
 
@@ -271,5 +271,47 @@ module.exports = {
       createdAt: updatedPost.createdAt.toISOString(),
       updatedAt: updatedPost.updatedAt.toISOString(),
     };
+  },
+  deletePost: async function ({ postId }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+    const post = await Post.findById(postId).populate("creator");
+
+    if (!post) {
+      const error = new Error("Could not find post.");
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (post.creator._id.toString() !== req.userId.toString()) {
+      const error = new Error("Could not find post.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const isPostDeleted = await Post.findByIdAndRemove(postId);
+
+    if (isPostDeleted) {
+      const currentUser = await User.findById(req.userId);
+      if (!currentUser) {
+        const error = new Error("User does not exists.");
+        error.statusCode = 401;
+        throw error;
+      }
+
+      currentUser.posts.pull(postId);
+      await currentUser.save();
+
+      return {
+        message: "Successfully deleted",
+      };
+    } else {
+      const error = new Error("Post not found");
+      error.statusCode(404);
+      throw error;
+    }
   },
 };

@@ -31,6 +31,10 @@ module.exports = buildSchema(`
         totalItems: Int!
     }
 
+    type DeletedPostConfirmation{
+        message: String!
+    }
+
     type UserStatus {
         status: String!
     }
@@ -58,6 +62,7 @@ module.exports = buildSchema(`
         createUser(userInput: UserInputData) : User!
         createPost(userInput: PostInput ) : Post!
         editPost(userInput: PostInput, postId: ID!) : Post!
+        deletePost(postId: ID!) : DeletedPostConfirmation!
     }
 
     type RootQuery{
