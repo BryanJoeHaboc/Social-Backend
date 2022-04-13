@@ -316,6 +316,30 @@ module.exports = {
       throw error;
     }
   },
+  updateStatus: async function ({ status }, req) {
+    if (!req.isAuth) {
+      const error = new Error("Not authenticated");
+      error.code = 401;
+      throw error;
+    }
+    if (!status) {
+      const error = new Error("Invalid User status");
+      error.status = 422;
+      throw error;
+    }
+    const currentUser = await User.findById(req.userId);
+    if (!currentUser) {
+      const error = new Error("User does not exists.");
+      error.statusCode = 401;
+      throw error;
+    }
+    currentUser.status = status;
+    await currentUser.save();
+
+    return {
+      status: currentUser.status,
+    };
+  },
 };
 
 const clearImage = (filePath) => {

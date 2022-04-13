@@ -57,12 +57,15 @@ module.exports = buildSchema(`
         imageUrl: String!
     }
 
+    
+
 
     type RootMutation {
         createUser(userInput: UserInputData) : User!
         createPost(userInput: PostInput ) : Post!
         editPost(userInput: PostInput, postId: ID!) : Post!
         deletePost(postId: ID!) : DeletedPostConfirmation!
+        updateStatus(status: String!) : UserStatus!
     }
 
     type RootQuery{
