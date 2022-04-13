@@ -82,6 +82,7 @@ app.put("/post-image", (req, res, next) => {
   req.file.path = req.file.path.replace("\\", "/");
 
   if (req.body.oldPath) {
+    req.body.oldPath = req.body.oldPath.replace("\\", "/");
     clearImage(req.body.oldPath);
   }
 
@@ -122,6 +123,6 @@ db.then(() => {
 }).catch((err) => console.log(err));
 
 const clearImage = (filePath) => {
-  filePath = path.join(__dirname, "..", filePath);
+  filePath = path.join(__dirname, filePath);
   fs.unlink(filePath, (err) => console.log(err));
 };
